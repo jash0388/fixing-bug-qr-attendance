@@ -1,0 +1,42 @@
+{
+  "name": "@workspace/api-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "seed": "tsx src/seed.ts",
+    "build": "node ./build.vercel.mjs",
+    "build:vercel": "node ./build.vercel.mjs",
+    "start": "node --enable-source-maps ./dist/index.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "@workspace/api-zod": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "catalog:",
+    "express": "^5",
+    "jsonwebtoken": "^9.0.3",
+    "pino": "^9",
+    "pino-http": "^10",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "catalog:",
+    "@types/qrcode": "^1.5.6",
+    "esbuild": "^0.21.5",
+    "esbuild-plugin-pino": "^2.3.3",
+    "pino-pretty": "^13",
+    "thread-stream": "3.1.0",
+    "tsx": "catalog:"
+  }
+}

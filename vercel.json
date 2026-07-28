@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/qr-attendance run build && pnpm --filter @workspace/api-server run build:vercel",
+  "outputDirectory": "artifacts/qr-attendance/dist/public",
+  "framework": null,
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index" },
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/((?!api).*)", "destination": "/index.html" }
+  ]
+}

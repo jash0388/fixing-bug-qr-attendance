@@ -1,0 +1,801 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: QR Attendance System API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: attendance
+    description: Attendance tracking
+  - name: search
+    description: Search functionality
+  - name: mentor
+    description: Mentor app endpoints
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/mentor-login:
+    post:
+      operationId: mentorLogin
+      tags: [auth]
+      summary: Mentor login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorLoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [student, staff]
+        - name: mentorId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a new user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user (assign mentor, etc.)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /qrcode/{userId}:
+    get:
+      operationId: getQrCode
+      tags: [users]
+      summary: Get QR code for a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: QR code data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrCodeResponse"
+
+  /scan:
+    post:
+      operationId: scanQr
+      tags: [attendance]
+      summary: Scan a QR code to mark attendance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanBody"
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+        "400":
+          description: Invalid or duplicate scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /attendance:
+    get:
+      operationId: listAttendance
+      tags: [attendance]
+      summary: List attendance records
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [student, staff]
+        - name: month
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
+
+  /attendance/today:
+    get:
+      operationId: getTodayAttendance
+      tags: [attendance]
+      summary: Get today's attendance
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Today's attendance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
+
+  /attendance/currently-inside:
+    get:
+      operationId: getCurrentlyInside
+      tags: [attendance]
+      summary: Get users currently inside campus
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Users currently inside
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
+
+  /attendance/recent:
+    get:
+      operationId: getRecentScans
+      tags: [attendance]
+      summary: Get recent scans (public, for security guard)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
+
+  /attendance/dashboard-stats:
+    get:
+      operationId: getDashboardStats
+      tags: [attendance]
+      summary: Get dashboard statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /attendance/user/{userId}:
+    get:
+      operationId: getUserAttendance
+      tags: [attendance]
+      summary: Get attendance history for a user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: month
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User's attendance history with summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAttendanceHistory"
+
+  /search:
+    get:
+      operationId: searchUsers
+      tags: [search]
+      summary: Search users by name or unique ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [student, staff]
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /mentors:
+    get:
+      operationId: listMentors
+      tags: [users]
+      summary: List all mentors
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of mentors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mentor"
+    post:
+      operationId: createMentor
+      tags: [users]
+      summary: Create a new mentor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMentorBody"
+      responses:
+        "201":
+          description: Mentor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mentor"
+
+  /mentor/students:
+    get:
+      operationId: getMentorStudents
+      tags: [mentor]
+      summary: Get the logged-in mentor's assigned students with today's status
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Mentor's students with today's status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MentorStudent"
+
+  /mentor/attendance/{userId}:
+    get:
+      operationId: getMentorStudentAttendance
+      tags: [mentor]
+      summary: Get attendance history of one of the mentor's students
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student attendance history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAttendanceHistory"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        admin:
+          $ref: "#/components/schemas/Admin"
+      required:
+        - token
+        - admin
+
+    MentorLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        mentor:
+          $ref: "#/components/schemas/Mentor"
+      required:
+        - token
+        - mentor
+
+    Admin:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - email
+        - name
+
+    Mentor:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - email
+        - name
+
+    CreateMentorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - name
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        uniqueId:
+          type: string
+        role:
+          type: string
+          enum: [student, staff]
+        mentorId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - uniqueId
+        - role
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        uniqueId:
+          type: string
+        role:
+          type: string
+          enum: [student, staff]
+        mentorId:
+          type: integer
+          nullable: true
+      required:
+        - name
+        - role
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        mentorId:
+          type: integer
+          nullable: true
+
+    QrCodeResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+        uniqueId:
+          type: string
+        qrCodeDataUrl:
+          type: string
+      required:
+        - userId
+        - uniqueId
+        - qrCodeDataUrl
+
+    ScanBody:
+      type: object
+      properties:
+        uniqueId:
+          type: string
+      required:
+        - uniqueId
+
+    ScanResult:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [entry, exit, ignored]
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        attendance:
+          $ref: "#/components/schemas/AttendanceRecord"
+      required:
+        - action
+        - message
+        - user
+
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        date:
+          type: string
+          format: date
+        entryTime:
+          type: string
+          nullable: true
+        exitTime:
+          type: string
+          nullable: true
+        scanCount:
+          type: integer
+        durationMinutes:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [present, left, inside]
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - id
+        - userId
+        - date
+        - scanCount
+        - status
+
+    DashboardStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalStudents:
+          type: integer
+        totalStaff:
+          type: integer
+        todayAttendanceCount:
+          type: integer
+        currentlyInsideCount:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+      required:
+        - totalUsers
+        - totalStudents
+        - totalStaff
+        - todayAttendanceCount
+        - currentlyInsideCount
+        - recentActivity
+
+    UserAttendanceHistory:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+        summary:
+          $ref: "#/components/schemas/AttendanceSummary"
+      required:
+        - user
+        - records
+        - summary
+
+    AttendanceSummary:
+      type: object
+      properties:
+        totalDaysPresent:
+          type: integer
+        averageMinutesSpent:
+          type: number
+        lateEntriesCount:
+          type: integer
+        totalDaysChecked:
+          type: integer
+      required:
+        - totalDaysPresent
+        - averageMinutesSpent
+        - lateEntriesCount
+        - totalDaysChecked
+
+    MentorStudent:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        attendanceToday:
+          $ref: "#/components/schemas/AttendanceRecord"
+          nullable: true
+        cameToday:
+          type: boolean
+      required:
+        - user
+        - cameToday
